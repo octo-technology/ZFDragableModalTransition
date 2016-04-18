@@ -28,6 +28,7 @@ typedef NS_ENUM(NSUInteger, ZFModalTransitonDirection) {
 @property (nonatomic) ZFModalTransitonDirection direction;
 @property CGFloat behindViewScale;
 @property CGFloat behindViewAlpha;
+@property (nonatomic, strong) UIVisualEffectView *behindViewBlur;
 @property CGFloat transitionDuration;
 
 - (id)initWithModalViewController:(UIViewController *)modalViewController;

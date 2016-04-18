@@ -134,6 +134,9 @@
             [fromViewController beginAppearanceTransition:NO animated:YES];
         }
 
+        self.behindViewBlur.effect = nil;
+        self.behindViewBlur.hidden = false;
+
         [UIView animateWithDuration:[self transitionDuration:transitionContext]
                               delay:0
              usingSpringWithDamping:0.8
@@ -142,10 +145,10 @@
                          animations:^{
                              fromViewController.view.transform = CGAffineTransformScale(fromViewController.view.transform, self.behindViewScale, self.behindViewScale);
                              fromViewController.view.alpha = self.behindViewAlpha;
-
                              toViewController.view.frame = CGRectMake(0,0,
                                                                       CGRectGetWidth(toViewController.view.frame),
                                                                       CGRectGetHeight(toViewController.view.frame));
+                             self.behindViewBlur.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleDark];
                          } completion:^(BOOL finished) {
                              if (toViewController.modalPresentationStyle == UIModalPresentationCustom) {
                                  [fromViewController endAppearanceTransition];
@@ -157,7 +160,7 @@
         if (fromViewController.modalPresentationStyle == UIModalPresentationFullScreen) {
             [containerView addSubview:toViewController.view];
         }
-        
+
         [containerView bringSubviewToFront:fromViewController.view];
 
         if (![self isPriorToIOS8]) {
@@ -202,12 +205,14 @@
                              toViewController.view.layer.transform = CATransform3DScale(toViewController.view.layer.transform, scaleBack, scaleBack, 1);
                              toViewController.view.alpha = 1.0f;
                              fromViewController.view.frame = endRect;
+                             self.behindViewBlur.effect = nil;
                          } completion:^(BOOL finished) {
                              toViewController.view.layer.transform = CATransform3DIdentity;
                              if (fromViewController.modalPresentationStyle == UIModalPresentationCustom) {
                                  [toViewController endAppearanceTransition];
                              }
                              [transitionContext completeTransition:![transitionContext transitionWasCancelled]];
+                             self.behindViewBlur.hidden = true;
                          }];
     }
 }
@@ -239,7 +244,7 @@
             self.panLocationStart = location.x;
         }
         [self.modalController dismissViewControllerAnimated:YES completion:nil];
-        
+
     } else if (recognizer.state == UIGestureRecognizerStateChanged) {
         CGFloat animationRatio = 0;
 
@@ -252,7 +257,7 @@
         }
 
         [self updateInteractiveTransition:animationRatio];
-        
+
     } else if (recognizer.state == UIGestureRecognizerStateEnded) {
 
         CGFloat velocityForSelectedDirection;
@@ -292,7 +297,7 @@
     self.tempTransform = toViewController.view.layer.transform;
 
     toViewController.view.alpha = self.behindViewAlpha;
-    
+
     if (fromViewController.modalPresentationStyle == UIModalPresentationFullScreen) {
         [[transitionContext containerView] addSubview:toViewController.view];
     }
@@ -380,7 +385,7 @@
     if (fromViewController.modalPresentationStyle == UIModalPresentationCustom) {
         [toViewController beginAppearanceTransition:YES animated:YES];
     }
-    
+
     [UIView animateWithDuration:[self transitionDuration:transitionContext]
                           delay:0
          usingSpringWithDamping:0.8
@@ -391,19 +396,20 @@
                          toViewController.view.layer.transform = CATransform3DScale(self.tempTransform, scaleBack, scaleBack, 1);
                          toViewController.view.alpha = 1.0f;
                          fromViewController.view.frame = endRect;
+                         self.behindViewBlur.effect = nil;
                      } completion:^(BOOL finished) {
                          if (fromViewController.modalPresentationStyle == UIModalPresentationCustom) {
                              [toViewController endAppearanceTransition];
                          }
                          [transitionContext completeTransition:YES];
+                         self.behindViewBlur.hidden = YES;
                      }];
 }
 
 - (void)cancelInteractiveTransition
 {
     id<UIViewControllerContextTransitioning> transitionContext = self.transitionContext;
-    [transitionContext cancelInteractiveTransition];
-    
+
     UIViewController *fromViewController = [transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey];
     UIViewController *toViewController = [transitionContext viewControllerForKey:UITransitionContextToViewControllerKey];
 
@@ -479,7 +485,7 @@
     if (self.gestureRecognizerToFailPan && otherGestureRecognizer && self.gestureRecognizerToFailPan == otherGestureRecognizer) {
         return YES;
     }
-    
+
     return NO;
 }
 
@@ -523,25 +529,25 @@
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
 {
     [super touchesMoved:touches withEvent:event];
-
+    
     if (!self.scrollview) {
         return;
     }
-
+    
     if (self.state == UIGestureRecognizerStateFailed) return;
     CGPoint velocity = [self velocityInView:self.view];
     CGPoint nowPoint = [touches.anyObject locationInView:self.view];
     CGPoint prevPoint = [touches.anyObject previousLocationInView:self.view];
-
+    
     if (self.isFail) {
         if (self.isFail.boolValue) {
             self.state = UIGestureRecognizerStateFailed;
         }
         return;
     }
-
+    
     CGFloat topVerticalOffset = -self.scrollview.contentInset.top;
-
+    
     if ((fabs(velocity.x) < fabs(velocity.y)) && (nowPoint.y > prevPoint.y) && (self.scrollview.contentOffset.y <= topVerticalOffset)) {
         self.isFail = @NO;
     } else if (self.scrollview.contentOffset.y >= topVerticalOffset) {
